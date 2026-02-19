@@ -21,8 +21,44 @@ ADK is platform agnostic so you can containerize and run agents anywhere. You ju
 > python main.py
 ```
 
+### Build the container and push to Artifact Registry
 
-### Test the API
+```
+# Set env variables
+export PROJECT_ID="your-project-id"
+export REGION="us-central1"
+export REPO_NAME="adk-sample"
+export IMAGE_NAME="adk-sample"
+
+# Create repository on Artifact Registry
+gcloud artifacts repositories create $REPO_NAME \
+    --project=$PROJECT_ID \
+    --repository-format=docker \
+    --location=$REGION \
+    --description="Docker repository for FastAPI agents"
+
+# Authenticate Docker to Google Cloud
+gcloud auth configure-docker $REGION-docker.pkg.dev
+
+# Build the image locally
+docker build -t $IMAGE_NAME .
+
+# Tag it for Artifact Registry
+docker tag $IMAGE_NAME $REGION-docker.pkg.dev/$PROJECT_ID/$REPO_NAME/$IMAGE_NAME:latest
+
+# Push it to the repo on Artifact Registry
+docker push $REGION-docker.pkg.dev/$PROJECT_ID/$REPO_NAME/$IMAGE_NAME:latest
+
+# Deploy image to Cloud Run
+gcloud run deploy $IMAGE_NAME \
+    --project $PROJECT_ID \
+    --image $REGION-docker.pkg.dev/$PROJECT_ID/$REPO_NAME/$IMAGE_NAME:latest \
+    --platform managed \
+    --region $REGION \
+    --allow-unauthenticated
+```
+
+### Test the API 
 
 Create a session
 ```
